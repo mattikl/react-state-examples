@@ -1,29 +1,33 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiIsOddity, getOddModeState, saveOddModeState } from "./api";
 import { log, sleep } from "./utils";
 
-/** Return whether odd mode is on and whether the state has changed */
-export const useOddMode = () => {
-  const enterMutation = useEnterOddMode();
-
+export const useIsInOddMode = () => {
   return useQuery({
     queryKey: ["useIsInOddMode"],
-    queryFn: async () => {
-      const oddMode = await apiIsOddity();
-      const last = await getOddModeState();
-      const changed  = oddMode !== last;
-      if (changed) {
-        if (oddMode) {
-          enterMutation.mutate(); // Run in background
-        }
-        await saveOddModeState(oddMode);
-      }
-
-      return { oddMode, changed };
-    },
+    queryFn: apiIsOddity,
     refetchInterval: 1000 * 5,
   });
 };
+
+export const useOddModeState = () => {
+  const queryClient = useQueryClient();
+  const query = useQuery<boolean>({
+    queryKey: ["useOddModeState"],
+    queryFn: getOddModeState,
+  });
+
+  const { mutate } = useMutation({
+    mutationFn: saveOddModeState,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["useOddModeState"],
+      });
+    },
+  });
+
+  return { ...query, mutate };
+}
 
 /** Mutation that should be run when entering odd mode */
 export const useEnterOddMode = () => {
