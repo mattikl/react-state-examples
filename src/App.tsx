@@ -1,47 +1,92 @@
 import { useEffect, useState } from "react";
-import "./App.css";
-import { useOddMode } from "./queries";
-import { OddModeAnimation } from "./OddModeAnimation";
-import { log } from "./utils";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  apiIsOddity,
+  getOddModeState,
+  saveOddModeState,
+} from "./api";
+import { useEnterOddMode } from "./queries";
+import Modal from "./Modal";
+import Clock from "./Clock";
 
-function App() {
-  const { data, isLoading } = useOddMode();
-  // Demonstrate a modal dialog that's in the DOM
+const POLL_INTERVAL = 5000;
+
+export default function App() {
+  const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
+  const [lastApiValue, setLastApiValue] = useState<boolean | null>(null);
+  const [changed, setChanged] = useState(false);
+
+  const {
+    data: isOddFromStorage,
+    isLoading: isLoadingStorage,
+    refetch: refetchStorage,
+  } = useQuery({
+    queryKey: ["oddModeStorage"],
+    queryFn: getOddModeState,
+  });
+
+  const {
+    data: isOddFromApi,
+    refetch: refetchApi,
+  } = useQuery({
+    queryKey: ["oddModeApi"],
+    queryFn: apiIsOddity,
+    refetchInterval: POLL_INTERVAL,
+  });
+
+  const saveStateMutation = useMutation({
+    mutationFn: saveOddModeState,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["oddModeStorage"] }),
+  });
+
+  const { mutate: enterOddMode } = useEnterOddMode();
 
   useEffect(() => {
-    if (data?.changed && !data.oddMode) {
-      log("show modal");
-      setShowModal(true);
+    if (isOddFromApi == null || isOddFromStorage == null) return;
+
+    const hasChanged = isOddFromApi !== lastApiValue;
+    setChanged(hasChanged);
+    setLastApiValue(isOddFromApi);
+
+    if (hasChanged) {
+      saveStateMutation.mutate(isOddFromApi);
+
+      if (isOddFromApi) {
+        enterOddMode();
+      } else {
+        setShowModal(true);
+      }
     }
-  }, [data]);
+  }, [isOddFromApi]);
 
-  if (isLoading) {
-    return <div>Loading odd mode...</div>;
-  }
-
-  if (!data) {
-    return <div>error...</div>;
-  }
-
-  const { oddMode, changed } = data;
+  if (isLoadingStorage || isOddFromStorage == null) return <div>Loading...</div>;
 
   return (
-    <>
-      <OddModeAnimation oddMode={oddMode} />
-      <h1>Odd mode example</h1>
-      <p>Odd mode is {oddMode ? "ON" : "OFF"}</p>
-      <p>Changed in last API call: {changed.toString()}</p>
+    <div className={`min-h-screen flex flex-col items-center justify-center gap-4 ${isOddFromStorage ? "bg-red-100" : "bg-white"}`}>
+      <Clock isOdd={isOddFromStorage} />
+      <h1 className="text-2xl font-bold">
+        Odd Mode is {isOddFromStorage ? "ON" : "OFF"}
+      </h1>
+      <p className="text-sm text-gray-600">
+        Last API read was {changed ? "a change" : "unchanged"}
+      </p>
       {showModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <p>Odd mode ended</p>
-            <button onClick={() => setShowModal(false)}>OK</button>
-          </div>
-        </div>
+        <Modal onClose={() => setShowModal(false)}>
+          <h2 className="text-lg font-semibold mb-2">Odd mode ended</h2>
+          <p className="mb-4">Click OK to continue using the app.</p>
+          <button
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            onClick={() => setShowModal(false)}
+          >
+            OK
+          </button>
+        </Modal>
       )}
-    </>
+    </div>
   );
 }
-
-export default App;
