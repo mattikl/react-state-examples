@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import { useOddMode } from "./queries";
 import { OddModeAnimation } from "./OddModeAnimation";
+import { log } from "./utils";
 
 function App() {
   const { data, isLoading } = useOddMode();
@@ -10,6 +11,7 @@ function App() {
 
   useEffect(() => {
     if (data?.changed && !data.oddMode) {
+      log("show modal");
       setShowModal(true);
     }
   }, [data]);
