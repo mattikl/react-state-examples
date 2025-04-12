@@ -4,8 +4,6 @@ import { log, sleep } from "./utils";
 
 /** Return whether odd mode is on and whether the state has changed */
 export const useOddMode = () => {
-  const enterMutation = useEnterOddMode();
-
   return useQuery({
     queryKey: ["useIsInOddMode"],
     queryFn: async () => {
@@ -13,9 +11,6 @@ export const useOddMode = () => {
       const last = await getOddModeState();
       const changed  = oddMode !== last;
       if (changed) {
-        if (oddMode) {
-          enterMutation.mutate(); // Run in background
-        }
         await saveOddModeState(oddMode);
       }
 
