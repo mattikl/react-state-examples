@@ -6,8 +6,8 @@ Branches:
 
 * `main` contains a working example
 * [useeffect-mutation](https://github.com/mattikl/react-state-examples/tree/useeffect-mutation) demonstrate what can happen if we call the mutation from components `useEffect`
-* [two-queries](https://github.com/mattikl/react-state-examples/tree/two-queries) demonstrates the chaos of trying to maintain state in a separate query
-* [llm](https://github.com/mattikl/react-state-examples/tree/llm) is an LLM generated solution from a well-crafted prompt below
+* [two-queries](https://github.com/mattikl/react-state-examples/tree/two-queries) demonstrates the maintaining state in a separate query (a working example so far)
+* [llm](https://github.com/mattikl/react-state-examples/tree/llm) is an LLM generated solution from a well-crafted prompt below (contains many bugs)
 
 ## Prompt for LLMs
 
@@ -83,7 +83,7 @@ The state should be persisted with `saveOddModeState` to be consistent after pag
 On top of the UI, display a simple SVG animation with a black circle and a clock arm with the following logic:
 
 - when odd mode is off, it should rotate clockwise
-- when odd mode is one, it should rotate counterclockwise and have a light red background
+- when odd mode is on, it should rotate counterclockwise and have a light red background
 
 The UI should also contain debug information whether last value read from the API was changed or not.
 
